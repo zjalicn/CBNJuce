@@ -1,0 +1,82 @@
+# Build directories
+build/
+Builds/
+ui/build/
+
+# Dependencies
+node_modules/
+ui/node_modules/
+JUCE/
+
+# React build artifacts
+ui/build/
+ui/.env
+ui/.env.*
+
+# Generated WebView files
+webview_files.zip
+
+# Local development files
+.env
+.env.*
+*.log
+
+# JUCE generated files
+JuceLibraryCode/
+**/Builds/
+
+# IDE files
+.vscode/
+.idea/
+*.xcodeproj
+*.xcworkspace
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sln.docstates
+*.sw?
+*.user
+.vs/
+
+# OS specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# CMake generated files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+CMakeScripts/
+CTestTestfile.cmake
+compile_commands.json
+_deps/
+CMakeLists.txt.user
+CMakeUserPresets.json
+
+# Binary files
+*.so
+*.dylib
+*.dll
+*.a
+*.lib
+*.exe
+*.out
+*.app
+*.vst
+*.vst3
+*.component
+*.au
+*.aax
+
+# Temporary scripts created by the build process
+scripts/
+
+# Package management files
+package-lock.json
+yarn.lock
