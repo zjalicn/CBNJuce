@@ -2,14 +2,14 @@ import React, { useState, useEffect } from "react";
 import "./styles/main.scss";
 
 // Import components
-import Header from "./components/Header/Header";
-import Knob from "./components/Knob/Knob";
-import Meter from "./components/Meter/Meter";
-import Oscilloscope from "./components/Oscilloscope/Oscilloscope";
-import FilterDisplay from "./components/FilterDisplay/FilterDisplay";
-import Toggle from "./components/Toggle/Toggle";
-import ControlPanel from "./components/ControlPanel/ControlPanel";
-import Tooltip from "./components/Tooltip/Tooltip";
+import Header from "./components/Header";
+import Knob from "./components/Knob";
+import Meter from "./components/Meter";
+import Oscilloscope from "./components/Oscilloscope";
+import FilterDisplay from "./components/FilterDisplay";
+import Toggle from "./components/Toggle";
+import ControlPanel from "./components/ControlPanel";
+import Tooltip from "./components/Tooltip";
 
 const App = () => {
   // Plugin state
@@ -252,7 +252,7 @@ const App = () => {
     <div className="plugin-container">
       {/* Header Section */}
       <Header
-        title="Oxide"
+        title="CBNJuce"
         onPresetChange={handlePresetChange}
         onSaveClick={handleSaveClick}
         presets={state.presets}
