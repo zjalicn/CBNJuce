@@ -1,0 +1,59 @@
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: $header-height;
+  padding: 0 $spacing-md;
+  box-sizing: border-box;
+}
+
+.title {
+  font-family: $font-family-title;
+  font-size: $font-size-title;
+  color: $primary-color;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+  letter-spacing: 1px;
+}
+
+.preset-container {
+  display: flex;
+  align-items: center;
+}
+
+.preset-label {
+  margin-right: $spacing-sm + 2;
+  font-size: $font-size-label;
+}
+
+.preset-dropdown {
+  background-color: $background-darker;
+  color: $text-primary;
+  border: $border-width solid $text-primary;
+  padding: $spacing-xs + 3 $spacing-sm + 4;
+  border-radius: $border-radius-sm;
+  font-size: $font-size-label;
+  min-width: 150px;
+  height: 36px;
+  outline: none;
+
+  &:focus {
+    border: $border-width solid $text-primary;
+    outline: none;
+  }
+}
+
+.save-button {
+  background-color: $primary-color;
+  color: $text-primary;
+  border: none;
+  padding: $spacing-xs + 3 $spacing-md + 1;
+  border-radius: $border-radius-sm;
+  cursor: pointer;
+  font-size: $font-size-label;
+  margin-left: $spacing-md - 1;
+
+  &:hover {
+    background-color: $primary-hover;
+  }
+}

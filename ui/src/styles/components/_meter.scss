@@ -1,0 +1,101 @@
+.meters-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+}
+
+.input-meters {
+  padding-right: $spacing-md;
+}
+
+.output-meters {
+  padding-left: $spacing-md;
+}
+
+.input-meters,
+.output-meters {
+  justify-content: center;
+}
+
+.meters-label {
+  font-size: $font-size-micro;
+  font-weight: bold;
+  color: $text-secondary;
+  text-align: center;
+  margin-bottom: $spacing-sm;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.meters {
+  display: flex;
+  position: relative;
+  gap: 4px;
+  height: 180px;
+}
+
+.meter {
+  margin: 0;
+  text-align: center;
+  position: relative;
+  width: $meter-width + 2;
+}
+
+.bar-container {
+  height: $meter-height;
+  width: $meter-width;
+  margin: 0 1px;
+  background: rgba($background-darker, 0.7);
+  position: relative;
+  margin: 0 auto;
+  border: none;
+  overflow: hidden;
+}
+
+.bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 0%;
+  background: $meter-gradient;
+  transition: height $transition-quick ease;
+
+  &.output-bar {
+    background: $meter-gradient;
+  }
+}
+
+.bar-markers {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.marker {
+  position: absolute;
+  left: 0;
+  width: 4px;
+  height: 1px;
+  background-color: rgba($text-primary, 0.4);
+
+  &-0 {
+    bottom: 75%;
+  }
+
+  &-3 {
+    bottom: 60%;
+  }
+
+  &-6 {
+    bottom: 45%;
+  }
+
+  &-10 {
+    bottom: 25%;
+  }
+}

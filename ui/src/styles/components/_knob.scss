@@ -1,0 +1,83 @@
+.knobs-container {
+  display: flex;
+  justify-content: center;
+  gap: $spacing-md - 1;
+  margin-top: $spacing-sm;
+}
+
+.knob-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.knob-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.knob {
+  width: $knob-size-large;
+  height: $knob-size-large;
+  border-radius: 50%;
+  background: $knob-background;
+  border: 2px solid $knob-border;
+  position: relative;
+  box-shadow: 0 3px 5px $knob-shadow;
+  cursor: pointer;
+
+  &-small {
+    width: $knob-size-small;
+    height: $knob-size-small;
+    border-radius: 50%;
+    background: $knob-background;
+    border: 2px solid $knob-border;
+    position: relative;
+    box-shadow: 0 2px 3px $knob-shadow;
+    cursor: pointer;
+  }
+}
+
+.knob-indicator {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 2px;
+  height: 12px;
+  background-color: $knob-indicator;
+  transform-origin: bottom center;
+  transform: translate(-50%, -100%) rotate(0deg);
+
+  &-small {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 1px;
+    height: 4px;
+    background-color: $knob-indicator;
+    transform-origin: bottom center;
+    transform: translate(-50%, -100%) rotate(0deg);
+  }
+}
+
+.knob-label {
+  margin-top: $spacing-sm + 2;
+  font-size: $font-size-tiny;
+  color: $text-secondary;
+}
+
+.knob-value {
+  margin-top: $spacing-xs + 1;
+  font-size: $font-size-micro;
+  color: $text-muted;
+}
+
+.knobs-row {
+  display: flex;
+  justify-content: center;
+  gap: $spacing-md;
+  padding-top: $spacing-xs;
+  align-items: flex-start;
+  margin-bottom: $spacing-xs;
+}

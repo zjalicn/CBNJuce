@@ -1,0 +1,84 @@
+// =======================
+// Mixins
+// =======================
+
+// Flex display with optional alignment
+@mixin flex($direction: row, $justify: center, $align: center) {
+  display: flex;
+  flex-direction: $direction;
+  justify-content: $justify;
+  align-items: $align;
+}
+
+// Panel styling with consistent look
+@mixin panel {
+  background: linear-gradient(145deg, $background-dark, $surface-color);
+  border: $border-width solid $border-color;
+  border-radius: $border-radius-sm;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  padding: $spacing-sm;
+  box-sizing: border-box;
+}
+
+// Knob rotation based on value
+@mixin knob-rotation($value) {
+  transform: translate(-50%, -100%) rotate(#{225 + $value * 270}deg);
+}
+
+// Basic panel header
+@mixin panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: $spacing-xs;
+  height: 20px;
+}
+
+// Panel title
+@mixin panel-title {
+  font-size: $font-size-tiny;
+  font-weight: bold;
+  color: $primary-color;
+  margin-left: $spacing-xs;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+// Center content perfectly in parent
+@mixin center-content {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+// Button styling
+@mixin button {
+  background-color: $primary-color;
+  color: $text-primary;
+  border: none;
+  padding: $spacing-xs + 3 $spacing-md + 1;
+  border-radius: $border-radius-sm;
+  cursor: pointer;
+  font-size: $font-size-label;
+
+  &:hover {
+    background-color: $primary-hover;
+  }
+}
+
+// Dropdown styling
+@mixin dropdown {
+  background-color: $background-darker;
+  color: $text-primary;
+  border: $border-width solid $border-color;
+  padding: $spacing-xs $spacing-sm;
+  border-radius: $border-radius-sm;
+  font-size: $font-size-tiny;
+  outline: none;
+  cursor: pointer;
+
+  &:focus {
+    border-color: $primary-color;
+  }
+}

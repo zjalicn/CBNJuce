@@ -1,0 +1,56 @@
+@import "variables";
+@import "mixins";
+
+// Global styles
+body {
+  background-color: transparent !important;
+  background: transparent !important;
+  color: $text-primary;
+  font-family: $font-family-body;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.plugin-container {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: transparent;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: $spacing-md;
+  box-sizing: border-box;
+  position: relative;
+  gap: $spacing-md;
+  justify-content: center;
+}
+
+.top-row {
+  display: flex;
+  flex: 1;
+  justify-content: space-between;
+  width: 100%;
+}
+
+// Component styles
+@import "components/knob";
+@import "components/meter";
+@import "components/toggle";
+@import "components/header";
+@import "components/oscilloscope";
+@import "components/filter";
+@import "components/tooltip";
+
+// Font setup
+@font-face {
+  font-family: "OldEnglishHearts";
+  src: url("../assets/fonts/old_english_hearts.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}
