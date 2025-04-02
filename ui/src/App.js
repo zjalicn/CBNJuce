@@ -83,26 +83,30 @@ const App = () => {
         }));
 
         // Generate fake oscilloscope data
-        const oscilloscopeData = Array(256)
-          .fill(0)
-          .map((_, i) => {
-            const t = i / 256;
-            return Math.sin(2 * Math.PI * 3 * t) * 0.5 * prev.distortion.drive;
-          });
+        setState((prev) => {
+          const oscilloscopeData = Array(256)
+            .fill(0)
+            .map((_, i) => {
+              const t = i / 256;
+              return (
+                Math.sin(2 * Math.PI * 3 * t) * 0.5 * prev.distortion.drive
+              );
+            });
 
-        setState((prev) => ({
-          ...prev,
-          oscilloscope: {
-            ...prev.oscilloscope,
-            data: oscilloscopeData,
-          },
-        }));
+          return {
+            ...prev,
+            oscilloscope: {
+              ...prev.oscilloscope,
+              data: oscilloscopeData,
+            },
+          };
+        });
       }
     };
 
     const intervalId = setInterval(simulateMeters, 50);
     return () => clearInterval(intervalId);
-  }, [isJuceAvailable, state.distortion.drive]);
+  }, [isJuceAvailable]);
 
   // Initialize JUCE communication
   useEffect(() => {
@@ -151,7 +155,10 @@ const App = () => {
 
     if (isJuceAvailable) {
       // Send changes to JUCE backend
-      window.valueChanged("distortion", param, value);
+      window.__JUCE__.backend.emitEvent("paramChange", {
+        name: `distortion.${param}`,
+        value: value,
+      });
     }
   };
 
@@ -165,7 +172,10 @@ const App = () => {
     }));
 
     if (isJuceAvailable) {
-      window.valueChanged("delay", param, value);
+      window.__JUCE__.backend.emitEvent("paramChange", {
+        name: `delay.${param}`,
+        value: value,
+      });
     }
   };
 
@@ -179,7 +189,10 @@ const App = () => {
     }));
 
     if (isJuceAvailable) {
-      window.valueChanged("filter", param, value);
+      window.__JUCE__.backend.emitEvent("paramChange", {
+        name: `filter.${param}`,
+        value: value,
+      });
     }
   };
 
@@ -190,13 +203,13 @@ const App = () => {
     }));
 
     if (isJuceAvailable) {
-      window.location.href = `oxide:preset=${presetName}`;
+      window.__JUCE__.backend.emitEvent("presetChange", { preset: presetName });
     }
   };
 
   const handleSaveClick = () => {
     if (isJuceAvailable) {
-      window.location.href = "oxide:action=save";
+      window.__JUCE__.backend.emitEvent("saveRequest", {});
     }
   };
 
