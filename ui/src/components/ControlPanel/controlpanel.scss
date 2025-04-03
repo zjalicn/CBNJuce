@@ -1,0 +1,43 @@
+@import "../../styles/variables";
+@import "../../styles/mixins";
+
+.control-panel {
+  background-color: $background-dark;
+  border-radius: $border-radius;
+  padding: $spacing-sm;
+  margin-bottom: $spacing-md;
+  box-shadow: $shadow-subtle;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.controls-title-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: $spacing-sm;
+}
+
+.controls-title {
+  font-size: $font-size-small;
+  font-weight: bold;
+  color: $text-secondary;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.control-knobs {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-around;
+  align-items: center;
+}
+
+.toggle-container {
+  margin-right: $spacing-sm;
+}
+
+.dropdown-container {
+  margin-left: $spacing-sm;
+}

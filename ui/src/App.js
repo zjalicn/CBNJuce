@@ -129,7 +129,6 @@ const App = () => {
 
   return (
     <div className="plugin-container">
-      {/* Header Section */}
       <Header title="Simple Gain" />
 
       {/* Main Content */}

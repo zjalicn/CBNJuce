@@ -1,4 +1,5 @@
 import React from "react";
+import "./controlpanel.scss";
 
 const ControlPanel = ({
   title,
