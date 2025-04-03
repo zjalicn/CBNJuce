@@ -29,19 +29,10 @@ body {
   box-sizing: border-box;
 }
 
-// Component styles
-@import "components/knob";
-@import "components/meter";
-@import "components/toggle";
-@import "components/header";
-@import "components/oscilloscope";
-@import "components/filter";
-@import "components/tooltip";
-
 // Font setup
 @font-face {
   font-family: "OldEnglishHearts";
-  src: url("../assets/fonts/old_english_hearts.ttf") format("truetype");
+  src: url("./fonts/old_english_hearts.ttf") format("truetype");
   font-weight: normal;
   font-style: normal;
 }

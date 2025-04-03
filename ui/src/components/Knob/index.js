@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-import Tooltip from "./Tooltip";
+import Tooltip from "../Tooltip";
+import "./knob.scss";
 
 /* 
 TODO: DO NOT DELETE

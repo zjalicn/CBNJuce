@@ -1,4 +1,5 @@
 import React, { useRef, useEffect } from "react";
+import "./filter.scss";
 
 const FilterDisplay = ({
   type = "lowpass", // 'lowpass', 'bandpass', 'highpass'

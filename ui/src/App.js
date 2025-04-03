@@ -1,12 +1,9 @@
 import React, { useState, useEffect } from "react";
 import "./styles/main.scss";
-
-// Import components
 import Header from "./components/Header";
 import Knob from "./components/Knob";
 
 const App = () => {
-  // Simple gain state
   const [gain, setGain] = useState(0.5);
   const [isJuceAvailable, setIsJuceAvailable] = useState(false);
   const [pluginInfo, setPluginInfo] = useState({

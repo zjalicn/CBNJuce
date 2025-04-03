@@ -1,3 +1,6 @@
+@import "../../styles/variables";
+@import "../../styles/mixins";
+
 .filter-panel {
   @include panel;
   flex: 0 0 auto;

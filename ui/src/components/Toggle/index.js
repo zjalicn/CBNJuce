@@ -1,4 +1,5 @@
 import React from "react";
+import "./toggle.scss";
 
 const Toggle = ({ checked = false, onChange, label = "" }) => {
   const handleChange = (e) => {

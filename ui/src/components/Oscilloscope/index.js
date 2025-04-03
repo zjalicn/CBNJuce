@@ -1,4 +1,5 @@
 import React, { useRef, useEffect } from "react";
+import "./oscilloscope.scss";
 
 const Oscilloscope = ({ data = [], size = 220 }) => {
   const canvasRef = useRef(null);
