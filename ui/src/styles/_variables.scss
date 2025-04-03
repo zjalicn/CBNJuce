@@ -31,19 +31,20 @@ $meter-gradient: linear-gradient(
   $danger-color 100%
 );
 
+$meter-width: 8px;
+$meter-height: 180px;
+
 // Knob Styles
 $knob-background: linear-gradient(135deg, #333, #222);
 $knob-border: $surface-highlight;
 $knob-indicator: $primary-color;
 $knob-shadow: rgba(0, 0, 0, 0.3);
+$knob-size-large: 32px;
+$knob-size-small: 10px;
 
 // UI Element Dimensions
 $header-height: 60px;
 $control-panel-height: 150px;
-$knob-size-large: 32px;
-$knob-size-small: 10px;
-$meter-width: 8px;
-$meter-height: 180px;
 
 // Typography
 $font-family-title: "OldEnglishHearts", "Lucida Grande", Arial, sans-serif;

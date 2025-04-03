@@ -116,8 +116,14 @@ CBNJuceAudioProcessorEditor::CBNJuceAudioProcessorEditor(CBNJuceAudioProcessor &
     // Load the content using the resource provider
     webView->goToURL(juce::WebBrowserComponent::getResourceProviderRoot());
 
-    // Set window size
-    setSize(800, 600);
+    // Set window size (make sure it's large enough for the UI)
+    setSize(400, 300);
+
+    // Debug log for the gain parameter
+    juce::Logger::writeToLog("Initial gain value: " + juce::String(processorRef.gainParameter->get()));
+
+    // Make sure we enable mouse events in the WebView
+    webView->setInterceptsMouseClicks(false, false);
 
     // Start a timer to update parameters periodically
     startTimerHz(30);
@@ -139,7 +145,7 @@ void CBNJuceAudioProcessorEditor::resized()
 
 void CBNJuceAudioProcessorEditor::timerCallback()
 {
-    // Update any UI elements that need periodic updates
+    // Emit an event to trigger UI updates
     webView->emitEventIfBrowserIsVisible("paramUpdate", juce::var{});
 }
 

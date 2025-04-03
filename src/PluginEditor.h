@@ -22,12 +22,10 @@ private:
     void nativeFunction(const juce::Array<juce::var> &args,
                         juce::WebBrowserComponent::NativeFunctionCompletion completion);
 
-    // Updates the frontend with current parameter values
-    void updateFrontend();
-
     CBNJuceAudioProcessor &processorRef;
     std::unique_ptr<juce::WebBrowserComponent> webView;
 
+    // Gain parameter connection
     juce::WebSliderRelay gainRelay{"gain"};
     juce::WebSliderParameterAttachment gainAttachment;
 

@@ -4,59 +4,10 @@ import "./styles/main.scss";
 // Import components
 import Header from "./components/Header";
 import Knob from "./components/Knob";
-import Meter from "./components/Meter";
-import Oscilloscope from "./components/Oscilloscope";
-import FilterDisplay from "./components/FilterDisplay";
-import Toggle from "./components/Toggle";
-import ControlPanel from "./components/ControlPanel";
-import Tooltip from "./components/Tooltip";
 
 const App = () => {
-  // Plugin state
-  const [state, setState] = useState({
-    distortion: {
-      drive: 0.5,
-      mix: 0.5,
-      algorithm: "soft_clip",
-    },
-    delay: {
-      time: 0.5,
-      feedback: 0.4,
-      mix: 0.3,
-      pingPong: false,
-    },
-    filter: {
-      type: "lowpass",
-      frequency: 1000,
-      resonance: 0.7,
-    },
-    meters: {
-      inputLeft: 0,
-      inputRight: 0,
-      outputLeft: 0,
-      outputRight: 0,
-      inputGain: 0,
-      outputGain: 0,
-    },
-    oscilloscope: {
-      data: Array(256).fill(0),
-    },
-    presets: [
-      { value: "default", label: "Default" },
-      { value: "ambient_wash", label: "Ambient Wash" },
-      { value: "analog_crush", label: "Analog Crush" },
-      { value: "drum_cruncher", label: "Drum Cruncher" },
-      { value: "fuzz", label: "Fuzz" },
-    ],
-    currentPreset: "default",
-    tooltip: {
-      visible: false,
-      text: "",
-      position: { x: 0, y: 0 },
-    },
-  });
-
-  // JUCE communication
+  // Simple gain state
+  const [gain, setGain] = useState(0.5);
   const [isJuceAvailable, setIsJuceAvailable] = useState(false);
   const [pluginInfo, setPluginInfo] = useState({
     vendor: "YourCompany",
@@ -64,54 +15,11 @@ const App = () => {
     pluginVersion: "1.0.0",
   });
 
-  // Simulated parameter update interval (for demo without JUCE)
-  useEffect(() => {
-    const simulateMeters = () => {
-      if (!isJuceAvailable) {
-        // Generate some fake meter levels
-        const randomLevel = () => Math.abs(Math.sin(Date.now() / 1000)) * 80;
-
-        setState((prev) => ({
-          ...prev,
-          meters: {
-            ...prev.meters,
-            inputLeft: randomLevel(),
-            inputRight: randomLevel(),
-            outputLeft: randomLevel() * prev.distortion.drive,
-            outputRight: randomLevel() * prev.distortion.drive,
-          },
-        }));
-
-        // Generate fake oscilloscope data
-        setState((prev) => {
-          const oscilloscopeData = Array(256)
-            .fill(0)
-            .map((_, i) => {
-              const t = i / 256;
-              return (
-                Math.sin(2 * Math.PI * 3 * t) * 0.5 * prev.distortion.drive
-              );
-            });
-
-          return {
-            ...prev,
-            oscilloscope: {
-              ...prev.oscilloscope,
-              data: oscilloscopeData,
-            },
-          };
-        });
-      }
-    };
-
-    const intervalId = setInterval(simulateMeters, 50);
-    return () => clearInterval(intervalId);
-  }, [isJuceAvailable]);
-
   // Initialize JUCE communication
   useEffect(() => {
     // Check if running inside JUCE WebView
     const isJuceAvailable = typeof window.__JUCE__ !== "undefined";
+    console.log("JUCE available:", isJuceAvailable);
     setIsJuceAvailable(isJuceAvailable);
 
     if (isJuceAvailable) {
@@ -125,14 +33,36 @@ const App = () => {
         pluginVersion: data.pluginVersion || "1.0.0",
       });
 
+      // Try to get the gain parameter from JUCE
+      try {
+        const gainState = window.__JUCE__.getSliderState("gain");
+        console.log("Gain state retrieved:", gainState);
+
+        if (gainState) {
+          // Initial update from JUCE backend
+          const initialValue = gainState.getScaledValue();
+          console.log("Initial gain value:", initialValue);
+          setGain(initialValue);
+
+          // Listen for value changes from C++ backend
+          gainState.valueChangedEvent.addListener(() => {
+            const newValue = gainState.getScaledValue();
+            console.log("Gain updated from C++:", newValue);
+            setGain(newValue);
+          });
+        }
+      } catch (err) {
+        console.error("Error connecting to gain parameter:", err);
+      }
+
       // Listen for parameter updates from C++
       window.__JUCE__.backend.addEventListener("paramUpdate", () => {
         try {
-          // This would update the state based on JUCE parameters
-          // For example, getting gain parameter:
           const gainState = window.__JUCE__.getSliderState("gain");
           if (gainState) {
-            // Update React state with values from JUCE
+            const updateValue = gainState.getScaledValue();
+            console.log("Param update event, gain value:", updateValue);
+            setGain(updateValue);
           }
         } catch (err) {
           console.error("Error handling parameter update:", err);
@@ -141,358 +71,102 @@ const App = () => {
     } else {
       console.log("Running in development mode (JUCE not available)");
     }
+
+    // Add debug for mouse events on the document
+    const debugMouseEvents = (e) => {
+      console.log("Mouse event:", e.type, "at", e.clientX, e.clientY);
+    };
+
+    // Uncomment these for detailed debugging if needed
+    // document.addEventListener('mousedown', debugMouseEvents);
+    // document.addEventListener('mousemove', debugMouseEvents);
+    // document.addEventListener('mouseup', debugMouseEvents);
+
+    // Return cleanup function
+    return () => {
+      // document.removeEventListener('mousedown', debugMouseEvents);
+      // document.removeEventListener('mousemove', debugMouseEvents);
+      // document.removeEventListener('mouseup', debugMouseEvents);
+    };
   }, []);
 
-  // Parameter change handlers
-  const handleDistortionChange = (param, value) => {
-    setState((prev) => ({
-      ...prev,
-      distortion: {
-        ...prev.distortion,
-        [param]: value,
-      },
-    }));
+  // Handle gain knob change
+  const handleGainChange = (value) => {
+    // Always update the local state first
+    setGain(value);
+    console.log("Gain changed to:", value);
 
+    // If JUCE is available, send the update to the backend
     if (isJuceAvailable) {
-      // Send changes to JUCE backend
-      window.__JUCE__.backend.emitEvent("paramChange", {
-        name: `distortion.${param}`,
-        value: value,
-      });
-    }
-  };
+      try {
+        // First try direct slider state access
+        const gainState = window.__JUCE__.getSliderState("gain");
+        if (gainState) {
+          console.log("Using sliderState to update gain");
+          gainState.setNormalisedValue(value);
+        } else {
+          // Fall back to event system if slider state isn't available
+          console.log("Using event system to update gain");
+          window.__JUCE__.backend.emitEvent("paramChange", {
+            name: "gain",
+            value: value,
+          });
+        }
+      } catch (err) {
+        console.error("Error sending gain change to JUCE:", err);
 
-  const handleDelayChange = (param, value) => {
-    setState((prev) => ({
-      ...prev,
-      delay: {
-        ...prev.delay,
-        [param]: value,
-      },
-    }));
-
-    if (isJuceAvailable) {
-      window.__JUCE__.backend.emitEvent("paramChange", {
-        name: `delay.${param}`,
-        value: value,
-      });
-    }
-  };
-
-  const handleFilterChange = (param, value) => {
-    setState((prev) => ({
-      ...prev,
-      filter: {
-        ...prev.filter,
-        [param]: value,
-      },
-    }));
-
-    if (isJuceAvailable) {
-      window.__JUCE__.backend.emitEvent("paramChange", {
-        name: `filter.${param}`,
-        value: value,
-      });
-    }
-  };
-
-  const handlePresetChange = (presetName) => {
-    setState((prev) => ({
-      ...prev,
-      currentPreset: presetName,
-    }));
-
-    if (isJuceAvailable) {
-      window.__JUCE__.backend.emitEvent("presetChange", { preset: presetName });
-    }
-  };
-
-  const handleSaveClick = () => {
-    if (isJuceAvailable) {
-      window.__JUCE__.backend.emitEvent("saveRequest", {});
-    }
-  };
-
-  // Show tooltip
-  const showTooltip = (text, e) => {
-    setState((prev) => ({
-      ...prev,
-      tooltip: {
-        visible: true,
-        text,
-        position: { x: e.clientX, y: e.clientY },
-      },
-    }));
-  };
-
-  // Hide tooltip
-  const hideTooltip = () => {
-    setState((prev) => ({
-      ...prev,
-      tooltip: {
-        ...prev.tooltip,
-        visible: false,
-      },
-    }));
-  };
-
-  // Utility to create a frequency display string
-  const formatFrequency = (freq) => {
-    if (freq >= 1000) {
-      return `${(freq / 1000).toFixed(1)} kHz`;
+        // Try alternative event method if the error occurred
+        try {
+          window.__JUCE__.backend.emitEvent("paramChange", {
+            name: "gain",
+            value: value,
+          });
+        } catch (innerErr) {
+          console.error("Both update methods failed:", innerErr);
+        }
+      }
     } else {
-      return `${Math.round(freq)} Hz`;
+      console.log("JUCE not available, only updating UI");
     }
   };
-
-  // Algorithm options for distortion
-  const algorithmOptions = [
-    { value: "soft_clip", label: "Soft Clip" },
-    { value: "hard_clip", label: "Hard Clip" },
-    { value: "foldback", label: "Foldback" },
-    { value: "waveshaper", label: "Waveshaper" },
-    { value: "bitcrusher", label: "Bitcrusher" },
-  ];
-
-  // Filter type options
-  const filterTypeOptions = [
-    { value: "lowpass", label: "Low Pass" },
-    { value: "bandpass", label: "Band Pass" },
-    { value: "highpass", label: "High Pass" },
-  ];
 
   return (
     <div className="plugin-container">
       {/* Header Section */}
-      <Header
-        title="CBNJuce"
-        onPresetChange={handlePresetChange}
-        onSaveClick={handleSaveClick}
-        presets={state.presets}
-        currentPreset={state.currentPreset}
-      />
+      <Header title="Simple Gain" />
 
       {/* Main Content */}
       <div className="main-content">
-        <div className="top-row">
-          {/* Input Meters */}
-          <Meter
-            leftLevel={state.meters.inputLeft}
-            rightLevel={state.meters.inputRight}
-            label="In"
-          />
-
-          {/* Left Side Controls */}
-          <div className="controls-left">
-            {/* Delay Section */}
-            <ControlPanel
-              title="DELAY"
-              className="controls-left-top"
-              toggle={
-                <Toggle
-                  label="Ping Pong"
-                  checked={state.delay.pingPong}
-                  onChange={(value) => handleDelayChange("pingPong", value)}
-                />
-              }
-            >
-              <div className="delay-knobs-row">
-                <Knob
-                  value={state.delay.time}
-                  onChange={(value) => handleDelayChange("time", value)}
-                  label="Time"
-                  valueFormatter={(value) => `${Math.round(value * 1000)}ms`}
-                  onDragStart={() => {}}
-                  onDragEnd={() => {}}
-                />
-                <Knob
-                  value={state.delay.feedback}
-                  onChange={(value) => handleDelayChange("feedback", value)}
-                  label="Feedback"
-                  onDragStart={() => {}}
-                  onDragEnd={() => {}}
-                />
-                <Knob
-                  value={state.delay.mix}
-                  onChange={(value) => handleDelayChange("mix", value)}
-                  label="Mix"
-                  onDragStart={() => {}}
-                  onDragEnd={() => {}}
-                />
-              </div>
-            </ControlPanel>
-
-            <div className="controls-separator"></div>
-
-            {/* Distortion Section */}
-            <ControlPanel
-              title="DISTORTION"
-              className="controls-left-bottom"
-              dropdown={
-                <select
-                  className="algorithm-selector"
-                  value={state.distortion.algorithm}
-                  onChange={(e) =>
-                    handleDistortionChange("algorithm", e.target.value)
-                  }
-                >
-                  {algorithmOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              }
-            >
-              <div className="knobs-row">
-                <Knob
-                  value={state.distortion.drive}
-                  onChange={(value) => handleDistortionChange("drive", value)}
-                  label="Drive"
-                  onDragStart={() => {}}
-                  onDragEnd={() => {}}
-                />
-                <Knob
-                  value={state.distortion.mix}
-                  onChange={(value) => handleDistortionChange("mix", value)}
-                  label="Mix"
-                  onDragStart={() => {}}
-                  onDragEnd={() => {}}
-                />
-              </div>
-            </ControlPanel>
-          </div>
-
-          {/* Oscilloscope in the middle */}
-          <Oscilloscope data={state.oscilloscope.data} />
-
-          {/* Right Side Controls */}
-          <div className="controls-right">
-            {/* Filter Section */}
-            <ControlPanel
-              title="FILTER"
-              className="controls-right-top"
-              dropdown={
-                <select
-                  className="filter-type-dropdown"
-                  value={state.filter.type}
-                  onChange={(e) => handleFilterChange("type", e.target.value)}
-                >
-                  {filterTypeOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              }
-            >
-              <div className="filter-knobs-row">
-                <Knob
-                  value={
-                    (Math.log10(state.filter.frequency) - Math.log10(20)) /
-                    (Math.log10(20000) - Math.log10(20))
-                  }
-                  onChange={(value) => {
-                    // Convert from normalized 0-1 to logarithmic frequency scale
-                    const frequency = Math.pow(
-                      10,
-                      value * (Math.log10(20000) - Math.log10(20)) +
-                        Math.log10(20)
-                    );
-                    handleFilterChange("frequency", frequency);
-                  }}
-                  label="Frequency"
-                  valueFormatter={(value) => {
-                    const frequency = Math.pow(
-                      10,
-                      value * (Math.log10(20000) - Math.log10(20)) +
-                        Math.log10(20)
-                    );
-                    return formatFrequency(frequency);
-                  }}
-                  onDragStart={() => {}}
-                  onDragEnd={() => {}}
-                />
-                <Knob
-                  value={
-                    (Math.log10(state.filter.resonance) - Math.log10(0.1)) /
-                    (Math.log10(10) - Math.log10(0.1))
-                  }
-                  onChange={(value) => {
-                    // Convert from normalized 0-1 to logarithmic resonance scale
-                    const resonance = Math.pow(
-                      10,
-                      value * (Math.log10(10) - Math.log10(0.1)) +
-                        Math.log10(0.1)
-                    );
-                    handleFilterChange("resonance", resonance);
-                  }}
-                  label="Resonance"
-                  valueFormatter={(value) => {
-                    const resonance = Math.pow(
-                      10,
-                      value * (Math.log10(10) - Math.log10(0.1)) +
-                        Math.log10(0.1)
-                    );
-                    return resonance.toFixed(1);
-                  }}
-                  onDragStart={() => {}}
-                  onDragEnd={() => {}}
-                />
-                <div className="filter-display-wrapper">
-                  <FilterDisplay
-                    type={state.filter.type}
-                    frequency={state.filter.frequency}
-                    resonance={state.filter.resonance}
-                  />
-                </div>
-              </div>
-            </ControlPanel>
-
-            <div className="controls-separator"></div>
-
-            {/* Pulse Section */}
-            <ControlPanel title="PULSE" className="controls-right-bottom">
-              <div className="pulse-knob-row">
-                <Knob
-                  value={0.0} // Replace with actual pulse amount
-                  onChange={(value) => {}} // Add pulse handler
-                  label="Amount"
-                  onDragStart={() => {}}
-                  onDragEnd={() => {}}
-                />
-                <Knob
-                  value={0.5} // Replace with actual pulse rate
-                  onChange={(value) => {}} // Add pulse handler
-                  label="Rate"
-                  valueFormatter={() => "1/4"} // Replace with actual value formatting
-                  onDragStart={() => {}}
-                  onDragEnd={() => {}}
-                />
-              </div>
-              <div
-                className="pulse-beat-indicator"
-                id="pulseIndicatorLight"
-              ></div>
-            </ControlPanel>
-          </div>
-
-          {/* Output Meters */}
-          <Meter
-            leftLevel={state.meters.outputLeft}
-            rightLevel={state.meters.outputRight}
-            label="Out"
-            isOutput={true}
-          />
-        </div>
+        <Knob
+          value={gain}
+          onChange={handleGainChange}
+          label="Gain"
+          size="large"
+          response="audio"
+          responseParams={{ unityPosition: 0.5 }}
+          useTooltip={true}
+          onDragStart={() => {
+            if (isJuceAvailable) {
+              try {
+                const gainState = window.__JUCE__.getSliderState("gain");
+                if (gainState) {
+                  gainState.sliderDragStarted();
+                }
+              } catch (err) {}
+            }
+          }}
+          onDragEnd={() => {
+            if (isJuceAvailable) {
+              try {
+                const gainState = window.__JUCE__.getSliderState("gain");
+                if (gainState) {
+                  gainState.sliderDragEnded();
+                }
+              } catch (err) {}
+            }
+          }}
+        />
       </div>
-
-      {/* Tooltip */}
-      <Tooltip
-        text={state.tooltip.text}
-        visible={state.tooltip.visible}
-        position={state.tooltip.position}
-      />
     </div>
   );
 };

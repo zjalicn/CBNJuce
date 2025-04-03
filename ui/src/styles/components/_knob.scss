@@ -1,20 +1,8 @@
-.knobs-container {
-  display: flex;
-  justify-content: center;
-  gap: $spacing-md - 1;
-  margin-top: $spacing-sm;
-}
-
-.knob-wrapper {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
 .knob-container {
   display: flex;
   flex-direction: column;
   align-items: center;
+  padding: $spacing-md;
 }
 
 .knob {
@@ -22,20 +10,24 @@
   height: $knob-size-large;
   border-radius: 50%;
   background: $knob-background;
-  border: 2px solid $knob-border;
+  border: none;
   position: relative;
-  box-shadow: 0 3px 5px $knob-shadow;
+  box-shadow: 0 0 12px rgba($knob-shadow, 0.6);
   cursor: pointer;
+  user-select: none;
+  transition: box-shadow 0.2s ease;
 
   &-small {
     width: $knob-size-small;
     height: $knob-size-small;
     border-radius: 50%;
     background: $knob-background;
-    border: 2px solid $knob-border;
+    border: none;
     position: relative;
-    box-shadow: 0 2px 3px $knob-shadow;
+    box-shadow: 0 0 8px rgba($knob-shadow, 0.5);
     cursor: pointer;
+    user-select: none;
+    transition: box-shadow 0.2s ease;
   }
 }
 
@@ -43,7 +35,7 @@
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 2px;
+  width: 3px;
   height: 12px;
   background-color: $knob-indicator;
   transform-origin: bottom center;
@@ -63,21 +55,13 @@
 
 .knob-label {
   margin-top: $spacing-sm + 2;
-  font-size: $font-size-tiny;
+  font-size: $font-size-small;
   color: $text-secondary;
+  font-weight: bold;
 }
 
 .knob-value {
   margin-top: $spacing-xs + 1;
-  font-size: $font-size-micro;
+  font-size: $font-size-tiny;
   color: $text-muted;
-}
-
-.knobs-row {
-  display: flex;
-  justify-content: center;
-  gap: $spacing-md;
-  padding-top: $spacing-xs;
-  align-items: flex-start;
-  margin-bottom: $spacing-xs;
 }
