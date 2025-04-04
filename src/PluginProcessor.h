@@ -1,6 +1,7 @@
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
+#include <atomic>
 
 class CBNJuceAudioProcessor : public juce::AudioProcessor
 {
@@ -35,7 +36,24 @@ public:
     void setStateInformation(const void *data, int sizeInBytes) override;
 
     juce::AudioParameterFloat *gainParameter;
+    juce::AudioParameterFloat *inputGainParameter;
+    juce::AudioParameterFloat *outputGainParameter;
+
+    // Get meter levels (0.0 to 1.0)
+    float getInputLevelLeft() const { return inputLevelLeft.load(); }
+    float getInputLevelRight() const { return inputLevelRight.load(); }
+    float getOutputLevelLeft() const { return outputLevelLeft.load(); }
+    float getOutputLevelRight() const { return outputLevelRight.load(); }
 
 private:
+    // Level meters (atomic for thread safety)
+    std::atomic<float> inputLevelLeft{0.0f};
+    std::atomic<float> inputLevelRight{0.0f};
+    std::atomic<float> outputLevelLeft{0.0f};
+    std::atomic<float> outputLevelRight{0.0f};
+
+    // Level smoothing
+    float levelSmoothing{0.7f};
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CBNJuceAudioProcessor)
 };

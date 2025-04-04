@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import Tooltip from "../Tooltip";
 import "./knob.scss";
 
@@ -12,6 +12,7 @@ const Knob = ({
   onChange,
   size = "large",
   label = "",
+  hideLabel = false,
   valueFormatter = (val) => `${Math.round(val * 100)}%`,
   onDragStart,
   onDragEnd,
@@ -65,57 +66,71 @@ const Knob = ({
   };
 
   // Handle mouse movement with response curve adjustments
-  const handleMouseMove = (e) => {
-    if (!dragging) return;
+  const handleMouseMove = useCallback(
+    (e) => {
+      if (!dragging) return;
 
-    // Update shift key state
-    setIsShiftPressed(e.shiftKey);
+      // Update shift key state
+      setIsShiftPressed(e.shiftKey);
 
-    // Calculate the vertical movement delta (negative for up, positive for down)
-    const delta = prevY - e.clientY;
-    setPrevY(e.clientY);
+      // Calculate the vertical movement delta (negative for up, positive for down)
+      const delta = prevY - e.clientY;
+      setPrevY(e.clientY);
 
-    // Base sensitivity is 0.01 (100px for full range)
-    let baseSensitivity = 0.01 * sensitivity;
+      // Base sensitivity is 0.01 (100px for full range)
+      let baseSensitivity = 0.01 * sensitivity;
 
-    // Reduce sensitivity when Shift is pressed for fine adjustment
-    if (isShiftPressed) {
-      baseSensitivity *= fineAdjustmentFactor;
-    }
+      // Reduce sensitivity when Shift is pressed for fine adjustment
+      if (isShiftPressed) {
+        baseSensitivity *= fineAdjustmentFactor;
+      }
 
-    // Further adjust sensitivity based on response type
-    let adjustedSensitivity = baseSensitivity;
+      // Further adjust sensitivity based on response type
+      let adjustedSensitivity = baseSensitivity;
 
-    if (response === "log" || response === "audio") {
-      // For logarithmic or audio response, make the sensitivity dependent on the current value
-      // This makes the knob more precise at lower values
-      adjustedSensitivity = baseSensitivity * (0.3 + value * 0.7);
-    } else if (response === "exponential") {
-      // For exponential response, make sensitivity higher at lower values and lower at higher values
-      // This gives more precision at higher values
-      adjustedSensitivity = baseSensitivity * (1 - value * 0.5);
-    }
+      if (response === "log" || response === "audio") {
+        // For logarithmic or audio response, make the sensitivity dependent on the current value
+        // This makes the knob more precise at lower values
+        adjustedSensitivity = baseSensitivity * (0.3 + value * 0.7);
+      } else if (response === "exponential") {
+        // For exponential response, make sensitivity higher at lower values and lower at higher values
+        // This gives more precision at higher values
+        adjustedSensitivity = baseSensitivity * (1 - value * 0.5);
+      }
 
-    // Apply any custom sensitivity adjustment from responseParams
-    if (responseParams.sensitivityFactor) {
-      adjustedSensitivity *= responseParams.sensitivityFactor;
-    }
+      // Apply any custom sensitivity adjustment from responseParams
+      if (responseParams.sensitivityFactor) {
+        adjustedSensitivity *= responseParams.sensitivityFactor;
+      }
 
-    // Calculate the raw linear change
-    let newValue = value + delta * adjustedSensitivity;
+      // Calculate the raw linear change
+      let newValue = value + delta * adjustedSensitivity;
 
-    // Constrain to 0-1 range
-    newValue = Math.min(1, Math.max(0, newValue));
+      // Constrain to 0-1 range
+      newValue = Math.min(1, Math.max(0, newValue));
 
-    if (onChange) {
-      onChange(newValue);
-    }
-  };
+      if (onChange) {
+        onChange(newValue);
+      }
+    },
+    [
+      dragging,
+      prevY,
+      setPrevY,
+      isShiftPressed,
+      fineAdjustmentFactor,
+      response,
+      responseParams,
+      value,
+      sensitivity,
+      onChange,
+    ]
+  );
 
-  const handleMouseUp = () => {
+  const handleMouseUp = useCallback(() => {
     setDragging(false);
     if (onDragEnd) onDragEnd();
-  };
+  }, [onDragEnd]);
 
   // Handle hover events
   const handleMouseEnter = () => {
@@ -128,17 +143,23 @@ const Knob = ({
   };
 
   // Handle keyboard events for Shift key when already dragging
-  const handleKeyDown = (e) => {
-    if (e.key === "Shift" && dragging) {
-      setIsShiftPressed(true);
-    }
-  };
+  const handleKeyDown = useCallback(
+    (e) => {
+      if (e.key === "Shift" && dragging) {
+        setIsShiftPressed(true);
+      }
+    },
+    [dragging]
+  );
 
-  const handleKeyUp = (e) => {
-    if (e.key === "Shift" && dragging) {
-      setIsShiftPressed(false);
-    }
-  };
+  const handleKeyUp = useCallback(
+    (e) => {
+      if (e.key === "Shift" && dragging) {
+        setIsShiftPressed(false);
+      }
+    },
+    [dragging]
+  );
 
   // Update tooltip position
   const updateTooltipPosition = () => {
@@ -183,7 +204,7 @@ const Knob = ({
       document.removeEventListener("keydown", handleKeyDown);
       document.removeEventListener("keyup", handleKeyUp);
     };
-  }, [dragging, prevY, value, onChange, onDragEnd, isShiftPressed]);
+  }, [dragging, handleMouseMove, handleMouseUp, handleKeyDown, handleKeyUp]);
 
   const knobClass = size === "small" ? "knob-small" : "knob";
   const indicatorClass =
@@ -208,7 +229,7 @@ const Knob = ({
         />
       </div>
 
-      {label && <div className="knob-label">{label}</div>}
+      {label && !hideLabel && <div className="knob-label">{label}</div>}
       {!useTooltip && <div className="knob-value">{displayValue}</div>}
 
       {useTooltip && (

@@ -1,11 +1,16 @@
-import React, { useEffect, useRef } from "react";
+import React from "react";
 import "./meter.scss";
+import Knob from "../Knob";
 
 const Meter = ({
   leftLevel = 0,
   rightLevel = 0,
   label = "",
-  isOutput = false,
+  showKnob = false,
+  knobValue = 0.5,
+  onKnobChange = () => {},
+  onSliderDragStart = () => {},
+  onSliderDragEnd = () => {},
 }) => {
   // Ensure values are in the range [0, 100]
   const safeLeftLevel = Math.max(0, Math.min(100, leftLevel));
@@ -16,16 +21,13 @@ const Meter = ({
   const displayRightHeight =
     safeRightLevel <= 0.01 ? "0" : `${safeRightLevel}%`;
 
-  // Add output class if this is an output meter
-  const barClass = isOutput ? "bar output-bar" : "bar";
-
   return (
     <div className="meters-column">
       {label && <div className="meters-label">{label}</div>}
       <div className="meters">
         <div className="meter">
           <div className="bar-container">
-            <div className={barClass} style={{ height: displayLeftHeight }} />
+            <div className="bar" style={{ height: displayLeftHeight }} />
             <div className="bar-markers">
               <div className="marker marker-0" />
               <div className="marker marker-3" />
@@ -36,7 +38,7 @@ const Meter = ({
         </div>
         <div className="meter">
           <div className="bar-container">
-            <div className={barClass} style={{ height: displayRightHeight }} />
+            <div className="bar" style={{ height: displayRightHeight }} />
             <div className="bar-markers">
               <div className="marker marker-0" />
               <div className="marker marker-3" />
@@ -46,6 +48,22 @@ const Meter = ({
           </div>
         </div>
       </div>
+
+      {showKnob && (
+        <div className="meter-knob-container">
+          <Knob
+            value={knobValue}
+            onChange={onKnobChange}
+            label="Gain"
+            hideLabel={true}
+            size="small"
+            useTooltip={true}
+            response="audio"
+            onDragStart={onSliderDragStart}
+            onDragEnd={onSliderDragEnd}
+          />
+        </div>
+      )}
     </div>
   );
 };

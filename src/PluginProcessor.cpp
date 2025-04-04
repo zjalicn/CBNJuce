@@ -6,8 +6,10 @@ CBNJuceAudioProcessor::CBNJuceAudioProcessor()
                          .withInput("Input", juce::AudioChannelSet::stereo(), true)
                          .withOutput("Output", juce::AudioChannelSet::stereo(), true))
 {
-    // Create our gain parameter with a range of 0.0 to 1.0, default of 0.5
+    // Create our gain parameters with a range of 0.0 to 1.0, default of 0.5
     addParameter(gainParameter = new juce::AudioParameterFloat("gain", "Gain", 0.0f, 1.0f, 0.5f));
+    addParameter(inputGainParameter = new juce::AudioParameterFloat("inputGain", "Input Gain", 0.0f, 1.0f, 0.5f));
+    addParameter(outputGainParameter = new juce::AudioParameterFloat("outputGain", "Output Gain", 0.0f, 1.0f, 0.5f));
 }
 
 CBNJuceAudioProcessor::~CBNJuceAudioProcessor()
@@ -97,10 +99,58 @@ void CBNJuceAudioProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce:
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear(i, 0, buffer.getNumSamples());
 
-    // Get the current gain value from our parameter
+    // Get the current gain values from our parameters
+    float currentInputGain = inputGainParameter->get();
     float currentGain = gainParameter->get();
+    float currentOutputGain = outputGainParameter->get();
 
-    // Apply gain to all channels
+    // Create a copy of the input buffer for input metering before any processing
+    juce::AudioBuffer<float> inputBuffer;
+    inputBuffer.makeCopyOf(buffer);
+
+    // Measure input levels before applying any gain
+    if (totalNumInputChannels >= 1)
+    {
+        auto *channelData = inputBuffer.getReadPointer(0);
+        float maxLevel = 0.0f;
+
+        for (int i = 0; i < inputBuffer.getNumSamples(); ++i)
+        {
+            maxLevel = std::max(maxLevel, std::abs(channelData[i]));
+        }
+
+        // Smooth the level
+        float newLevel = maxLevel;
+        inputLevelLeft = inputLevelLeft.load() * levelSmoothing + newLevel * (1.0f - levelSmoothing);
+    }
+
+    if (totalNumInputChannels >= 2)
+    {
+        auto *channelData = inputBuffer.getReadPointer(1);
+        float maxLevel = 0.0f;
+
+        for (int i = 0; i < inputBuffer.getNumSamples(); ++i)
+        {
+            maxLevel = std::max(maxLevel, std::abs(channelData[i]));
+        }
+
+        // Smooth the level
+        float newLevel = maxLevel;
+        inputLevelRight = inputLevelRight.load() * levelSmoothing + newLevel * (1.0f - levelSmoothing);
+    }
+
+    // Apply input gain to all channels
+    for (int channel = 0; channel < totalNumInputChannels; ++channel)
+    {
+        auto *channelData = buffer.getWritePointer(channel);
+
+        for (int sample = 0; sample < buffer.getNumSamples(); ++sample)
+        {
+            channelData[sample] *= currentInputGain;
+        }
+    }
+
+    // Apply main gain to all channels
     for (int channel = 0; channel < totalNumInputChannels; ++channel)
     {
         auto *channelData = buffer.getWritePointer(channel);
@@ -109,6 +159,48 @@ void CBNJuceAudioProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce:
         {
             channelData[sample] *= currentGain;
         }
+    }
+
+    // Apply output gain to all channels
+    for (int channel = 0; channel < totalNumInputChannels; ++channel)
+    {
+        auto *channelData = buffer.getWritePointer(channel);
+
+        for (int sample = 0; sample < buffer.getNumSamples(); ++sample)
+        {
+            channelData[sample] *= currentOutputGain;
+        }
+    }
+
+    // Measure output levels after all processing
+    if (totalNumOutputChannels >= 1)
+    {
+        auto *channelData = buffer.getReadPointer(0);
+        float maxLevel = 0.0f;
+
+        for (int i = 0; i < buffer.getNumSamples(); ++i)
+        {
+            maxLevel = std::max(maxLevel, std::abs(channelData[i]));
+        }
+
+        // Smooth the level
+        float newLevel = maxLevel;
+        outputLevelLeft = outputLevelLeft.load() * levelSmoothing + newLevel * (1.0f - levelSmoothing);
+    }
+
+    if (totalNumOutputChannels >= 2)
+    {
+        auto *channelData = buffer.getReadPointer(1);
+        float maxLevel = 0.0f;
+
+        for (int i = 0; i < buffer.getNumSamples(); ++i)
+        {
+            maxLevel = std::max(maxLevel, std::abs(channelData[i]));
+        }
+
+        // Smooth the level
+        float newLevel = maxLevel;
+        outputLevelRight = outputLevelRight.load() * levelSmoothing + newLevel * (1.0f - levelSmoothing);
     }
 }
 
@@ -126,7 +218,9 @@ void CBNJuceAudioProcessor::getStateInformation(juce::MemoryBlock &destData)
 {
     // Save parameter states to memory block
     juce::MemoryOutputStream stream(destData, true);
-    stream.writeFloat(*gainParameter); // Save gain value
+    stream.writeFloat(*gainParameter);       // Save gain value
+    stream.writeFloat(*inputGainParameter);  // Save input gain value
+    stream.writeFloat(*outputGainParameter); // Save output gain value
 }
 
 void CBNJuceAudioProcessor::setStateInformation(const void *data, int sizeInBytes)
@@ -135,7 +229,16 @@ void CBNJuceAudioProcessor::setStateInformation(const void *data, int sizeInByte
     juce::MemoryInputStream stream(data, static_cast<size_t>(sizeInBytes), false);
 
     if (stream.getDataSize() > 0)
+    {
         *gainParameter = stream.readFloat(); // Restore gain value
+
+        // Check if we have more data (for backward compatibility)
+        if (!stream.isExhausted())
+        {
+            *inputGainParameter = stream.readFloat();  // Restore input gain
+            *outputGainParameter = stream.readFloat(); // Restore output gain
+        }
+    }
 }
 
 juce::AudioProcessor *JUCE_CALLTYPE createPluginFilter()

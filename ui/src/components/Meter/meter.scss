@@ -64,10 +64,6 @@
   height: 0%;
   background: $meter-gradient;
   transition: height $transition-quick ease;
-
-  &.output-bar {
-    background: $meter-gradient;
-  }
 }
 
 .bar-markers {
@@ -101,4 +97,11 @@
   &-10 {
     bottom: 25%;
   }
+}
+
+.meter-knob-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: $spacing-sm;
 }

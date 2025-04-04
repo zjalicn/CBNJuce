@@ -4,6 +4,10 @@
 
 namespace
 {
+    // Plugin dimensions
+    constexpr int PLUGIN_WIDTH = 800;
+    constexpr int PLUGIN_HEIGHT = 600;
+
     // Helper functions for resource handling
     std::vector<std::byte> streamToVector(juce::InputStream &stream)
     {
@@ -67,7 +71,9 @@ namespace
 CBNJuceAudioProcessorEditor::CBNJuceAudioProcessorEditor(CBNJuceAudioProcessor &p)
     : AudioProcessorEditor(&p),
       processorRef(p),
-      gainAttachment{*processorRef.gainParameter, gainRelay, nullptr}
+      gainAttachment{*processorRef.gainParameter, gainRelay, nullptr},
+      inputGainAttachment{*processorRef.inputGainParameter, inputGainRelay, nullptr},
+      outputGainAttachment{*processorRef.outputGainParameter, outputGainRelay, nullptr}
 {
     // Create WebView with JUCE 8's WebBrowserComponent
     webView = std::make_unique<juce::WebBrowserComponent>(
@@ -99,6 +105,14 @@ CBNJuceAudioProcessorEditor::CBNJuceAudioProcessorEditor(CBNJuceAudioProcessor &
                     {
                         *processorRef.gainParameter = value;
                     }
+                    else if (paramName == "inputGain")
+                    {
+                        *processorRef.inputGainParameter = value;
+                    }
+                    else if (paramName == "outputGain")
+                    {
+                        *processorRef.outputGainParameter = value;
+                    }
                 })
             .withNativeFunction(
                 juce::Identifier{"nativeFunction"},
@@ -108,7 +122,9 @@ CBNJuceAudioProcessorEditor::CBNJuceAudioProcessorEditor(CBNJuceAudioProcessor &
                 {
                     nativeFunction(args, std::move(completion));
                 })
-            .withOptionsFrom(gainRelay));
+            .withOptionsFrom(gainRelay)
+            .withOptionsFrom(inputGainRelay)
+            .withOptionsFrom(outputGainRelay));
 
     // Add the WebView to the editor
     addAndMakeVisible(webView.get());
@@ -116,8 +132,8 @@ CBNJuceAudioProcessorEditor::CBNJuceAudioProcessorEditor(CBNJuceAudioProcessor &
     // Load the content using the resource provider
     webView->goToURL(juce::WebBrowserComponent::getResourceProviderRoot());
 
-    // Set window size (make sure it's large enough for the UI)
-    setSize(400, 300);
+    // Set window size using the constants
+    setSize(PLUGIN_WIDTH, PLUGIN_HEIGHT);
 
     // Debug log for the gain parameter
     juce::Logger::writeToLog("Initial gain value: " + juce::String(processorRef.gainParameter->get()));
@@ -145,8 +161,32 @@ void CBNJuceAudioProcessorEditor::resized()
 
 void CBNJuceAudioProcessorEditor::timerCallback()
 {
+    // Update meter values
+    updateMeterValues();
+
     // Emit an event to trigger UI updates
     webView->emitEventIfBrowserIsVisible("paramUpdate", juce::var{});
+}
+
+void CBNJuceAudioProcessorEditor::updateMeterValues()
+{
+    // Create an object with the current meter values
+    juce::DynamicObject::Ptr meterValues = new juce::DynamicObject();
+
+    // Get values from processor (0.0 to 1.0)
+    float inputLeft = processorRef.getInputLevelLeft();
+    float inputRight = processorRef.getInputLevelRight();
+    float outputLeft = processorRef.getOutputLevelLeft();
+    float outputRight = processorRef.getOutputLevelRight();
+
+    // Convert to percentage for UI (0 to 100)
+    meterValues->setProperty("inputLevelLeft", inputLeft * 100.0f);
+    meterValues->setProperty("inputLevelRight", inputRight * 100.0f);
+    meterValues->setProperty("outputLevelLeft", outputLeft * 100.0f);
+    meterValues->setProperty("outputLevelRight", outputRight * 100.0f);
+
+    // Pass to UI
+    webView->emitEventIfBrowserIsVisible("meterUpdate", juce::var(meterValues.get()));
 }
 
 auto CBNJuceAudioProcessorEditor::getResource(const juce::String &url) const

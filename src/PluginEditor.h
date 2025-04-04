@@ -22,12 +22,20 @@ private:
     void nativeFunction(const juce::Array<juce::var> &args,
                         juce::WebBrowserComponent::NativeFunctionCompletion completion);
 
+    void updateMeterValues();
+
     CBNJuceAudioProcessor &processorRef;
     std::unique_ptr<juce::WebBrowserComponent> webView;
 
     // Gain parameter connection
     juce::WebSliderRelay gainRelay{"gain"};
     juce::WebSliderParameterAttachment gainAttachment;
+
+    // Input and output gain parameter connections
+    juce::WebSliderRelay inputGainRelay{"inputGain"};
+    juce::WebSliderRelay outputGainRelay{"outputGain"};
+    juce::WebSliderParameterAttachment inputGainAttachment;
+    juce::WebSliderParameterAttachment outputGainAttachment;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(CBNJuceAudioProcessorEditor)
 };

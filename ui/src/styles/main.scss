@@ -29,6 +29,34 @@ body {
   box-sizing: border-box;
 }
 
+// 3-column layout
+.plugin-layout {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  flex: 1;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.main-column {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
+
+.left-column {
+  padding-right: $spacing-sm;
+  padding-left: $spacing-sm;
+}
+
+.right-column {
+  padding-left: $spacing-sm;
+  padding-right: $spacing-sm;
+}
+
 // Font setup
 @font-face {
   font-family: "OldEnglishHearts";
