@@ -5,9 +5,9 @@ import Knob from "./components/Knob";
 import Meter from "./components/Meter";
 
 const App = () => {
-  const [gain, setGain] = useState(0.5);
-  const [inputGain, setInputGain] = useState(0.5);
-  const [outputGain, setOutputGain] = useState(0.5);
+  const [gain, setGain] = useState(0.0);
+  const [inputGain, setInputGain] = useState(0.0);
+  const [outputGain, setOutputGain] = useState(0.0);
   const [meterLevels, setMeterLevels] = useState({
     inputLevelLeft: 0,
     inputLevelRight: 0,
@@ -70,8 +70,27 @@ const App = () => {
 
       // Set up a demo meter animation for development
       const demoInterval = setInterval(() => {
-        const inputLevel = inputGain * 90; // Scale to 0-90%
-        const outputLevel = inputLevel * gain * outputGain;
+        // Get raw input level (simulating audio input)
+        const rawInputLevel = 0.7; // Simulated raw signal level (0.0-1.0)
+
+        // Ensure gain values don't go below -24dB for calculations (prevents -Infinity)
+        const safeInputGain = Math.max(-24, inputGain);
+        const safeGain = Math.max(-24, gain);
+        const safeOutputGain = Math.max(-24, outputGain);
+
+        // Convert dB gains to linear gain factors
+        const inputGainFactor = Math.pow(10, safeInputGain / 20);
+        const mainGainFactor = Math.pow(10, safeGain / 20);
+        const outputGainFactor = Math.pow(10, safeOutputGain / 20);
+
+        // Apply input gain for input meter display
+        const inputLevel = rawInputLevel * inputGainFactor * 100; // Scale to 0-100%
+
+        // Calculate processed signal after input gain and main gain
+        const processedLevel = rawInputLevel * inputGainFactor * mainGainFactor;
+
+        // Apply output gain for output meter display
+        const outputLevel = processedLevel * outputGainFactor * 100;
 
         setMeterLevels({
           inputLevelLeft: Math.min(
@@ -134,9 +153,12 @@ const App = () => {
 
   // Handle parameter change
   const handleParamChange = (paramName, value, setStateFunc) => {
+    // Make sure the value is within valid range (-24 to 24)
+    const clampedValue = Math.max(-24, Math.min(24, value));
+
     // Always update the local state first
-    setStateFunc(value);
-    console.log(`${paramName} changed to:`, value);
+    setStateFunc(clampedValue);
+    console.log(`${paramName} changed to:`, clampedValue);
 
     // If JUCE is available, send the update to the backend
     if (isJuceAvailable) {
@@ -144,12 +166,14 @@ const App = () => {
         // First try direct slider state access
         const paramState = window.__JUCE__.getSliderState(paramName);
         if (paramState) {
-          paramState.setNormalisedValue(value);
+          // Convert from our -24 to 24 range to normalized 0-1 for JUCE
+          const normalizedValue = (clampedValue + 24) / 48;
+          paramState.setNormalisedValue(normalizedValue);
         } else {
           // Fall back to event system if slider state isn't available
           window.__JUCE__.backend.emitEvent("paramChange", {
             name: paramName,
-            value: value,
+            value: clampedValue,
           });
         }
       } catch (err) {
@@ -159,7 +183,7 @@ const App = () => {
         try {
           window.__JUCE__.backend.emitEvent("paramChange", {
             name: paramName,
-            value: value,
+            value: clampedValue,
           });
         } catch (innerErr) {
           console.error("Both update methods failed:", innerErr);
@@ -204,10 +228,12 @@ const App = () => {
             rightLevel={meterLevels.inputLevelRight}
             label="In"
             showKnob={true}
-            knobValue={inputGain}
-            onKnobChange={(value) =>
-              handleParamChange("inputGain", value, setInputGain)
-            }
+            knobValue={(inputGain + 24) / 48} // Convert from -24...+24 range to 0...1 for UI
+            onKnobChange={(value) => {
+              // Calculate dB value and apply it
+              const dbValue = value * 48 - 24;
+              handleParamChange("inputGain", dbValue, setInputGain);
+            }}
             onSliderDragStart={() => handleSliderDragStart("inputGain")}
             onSliderDragEnd={() => handleSliderDragEnd("inputGain")}
           />
@@ -216,12 +242,22 @@ const App = () => {
         {/* Middle column - Main gain control */}
         <div className="main-column">
           <Knob
-            value={gain}
-            onChange={(value) => handleParamChange("gain", value, setGain)}
+            value={(gain + 24) / 48} // Convert from -24...+24 range to 0...1 for UI
+            onChange={(value) => {
+              // Calculate dB value and apply it
+              const dbValue = value * 48 - 24;
+              handleParamChange("gain", dbValue, setGain);
+            }}
             label="Gain"
             size="large"
-            response="audio"
-            responseParams={{ unityPosition: 0.5 }}
+            response="linear"
+            sensitivity={0.8} // Lower sensitivity for more controlled movement
+            defaultValue={0.5} // This is 0dB (middle position)
+            valueFormatter={(val) => {
+              // Round to whole numbers for cleaner display
+              const dB = Math.round(val * 48 - 24);
+              return dB > 0 ? `+${dB} dB` : `${dB} dB`;
+            }}
             useTooltip={true}
             onDragStart={() => handleSliderDragStart("gain")}
             onDragEnd={() => handleSliderDragEnd("gain")}
@@ -235,10 +271,12 @@ const App = () => {
             rightLevel={meterLevels.outputLevelRight}
             label="Out"
             showKnob={true}
-            knobValue={outputGain}
-            onKnobChange={(value) =>
-              handleParamChange("outputGain", value, setOutputGain)
-            }
+            knobValue={(outputGain + 24) / 48} // Convert from -24...+24 range to 0...1 for UI
+            onKnobChange={(value) => {
+              // Calculate dB value and apply it
+              const dbValue = value * 48 - 24;
+              handleParamChange("outputGain", dbValue, setOutputGain);
+            }}
             onSliderDragStart={() => handleSliderDragStart("outputGain")}
             onSliderDragEnd={() => handleSliderDragEnd("outputGain")}
           />

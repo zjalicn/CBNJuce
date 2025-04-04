@@ -41,6 +41,9 @@ const Knob = ({
     setPrevY(e.clientY);
     setIsShiftPressed(e.shiftKey); // Initialize shift key state
     if (onDragStart) onDragStart();
+
+    // Capture the mouse to ensure we get events even if the cursor moves outside the window
+    e.target.setCapture && e.target.setCapture();
   };
 
   // Handle double-click to reset to default value
@@ -75,36 +78,22 @@ const Knob = ({
 
       // Calculate the vertical movement delta (negative for up, positive for down)
       const delta = prevY - e.clientY;
+
+      // Don't update if there's no movement
+      if (delta === 0) return;
+
       setPrevY(e.clientY);
 
-      // Base sensitivity is 0.01 (100px for full range)
-      let baseSensitivity = 0.01 * sensitivity;
+      // Lower base sensitivity for more controlled movement
+      let baseSensitivity = 0.005 * sensitivity;
 
       // Reduce sensitivity when Shift is pressed for fine adjustment
       if (isShiftPressed) {
         baseSensitivity *= fineAdjustmentFactor;
       }
 
-      // Further adjust sensitivity based on response type
-      let adjustedSensitivity = baseSensitivity;
-
-      if (response === "log" || response === "audio") {
-        // For logarithmic or audio response, make the sensitivity dependent on the current value
-        // This makes the knob more precise at lower values
-        adjustedSensitivity = baseSensitivity * (0.3 + value * 0.7);
-      } else if (response === "exponential") {
-        // For exponential response, make sensitivity higher at lower values and lower at higher values
-        // This gives more precision at higher values
-        adjustedSensitivity = baseSensitivity * (1 - value * 0.5);
-      }
-
-      // Apply any custom sensitivity adjustment from responseParams
-      if (responseParams.sensitivityFactor) {
-        adjustedSensitivity *= responseParams.sensitivityFactor;
-      }
-
       // Calculate the raw linear change
-      let newValue = value + delta * adjustedSensitivity;
+      let newValue = value + delta * baseSensitivity;
 
       // Constrain to 0-1 range
       newValue = Math.min(1, Math.max(0, newValue));
@@ -119,8 +108,6 @@ const Knob = ({
       setPrevY,
       isShiftPressed,
       fineAdjustmentFactor,
-      response,
-      responseParams,
       value,
       sensitivity,
       onChange,
@@ -130,6 +117,9 @@ const Knob = ({
   const handleMouseUp = useCallback(() => {
     setDragging(false);
     if (onDragEnd) onDragEnd();
+
+    // Release mouse capture when done dragging
+    document.releaseCapture && document.releaseCapture();
   }, [onDragEnd]);
 
   // Handle hover events

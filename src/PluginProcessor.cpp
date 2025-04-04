@@ -6,10 +6,10 @@ CBNJuceAudioProcessor::CBNJuceAudioProcessor()
                          .withInput("Input", juce::AudioChannelSet::stereo(), true)
                          .withOutput("Output", juce::AudioChannelSet::stereo(), true))
 {
-    // Create our gain parameters with a range of 0.0 to 1.0, default of 0.5
-    addParameter(gainParameter = new juce::AudioParameterFloat("gain", "Gain", 0.0f, 1.0f, 0.5f));
-    addParameter(inputGainParameter = new juce::AudioParameterFloat("inputGain", "Input Gain", 0.0f, 1.0f, 0.5f));
-    addParameter(outputGainParameter = new juce::AudioParameterFloat("outputGain", "Output Gain", 0.0f, 1.0f, 0.5f));
+    // Create our gain parameters with a range of -24dB to +24dB, default of 0dB (unity gain)
+    addParameter(gainParameter = new juce::AudioParameterFloat("gain", "Gain", -24.0f, 24.0f, 0.0f));
+    addParameter(inputGainParameter = new juce::AudioParameterFloat("inputGain", "Input Gain", -24.0f, 24.0f, 0.0f));
+    addParameter(outputGainParameter = new juce::AudioParameterFloat("outputGain", "Output Gain", -24.0f, 24.0f, 0.0f));
 }
 
 CBNJuceAudioProcessor::~CBNJuceAudioProcessor()
@@ -99,10 +99,21 @@ void CBNJuceAudioProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce:
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear(i, 0, buffer.getNumSamples());
 
-    // Get the current gain values from our parameters
-    float currentInputGain = inputGainParameter->get();
-    float currentGain = gainParameter->get();
-    float currentOutputGain = outputGainParameter->get();
+    // Get the current gain values from our parameters (in dB)
+    float currentInputGainDB = inputGainParameter->get();
+    float currentGainDB = gainParameter->get();
+    float currentOutputGainDB = outputGainParameter->get();
+
+    // Safety check to prevent -infinity issues
+    const float minSafeDbValue = -100.0f; // -100dB is close enough to silence for audio purposes
+    currentInputGainDB = std::max(minSafeDbValue, currentInputGainDB);
+    currentGainDB = std::max(minSafeDbValue, currentGainDB);
+    currentOutputGainDB = std::max(minSafeDbValue, currentOutputGainDB);
+
+    // Convert from dB to linear gain factors
+    float currentInputGain = juce::Decibels::decibelsToGain(currentInputGainDB);
+    float currentGain = juce::Decibels::decibelsToGain(currentGainDB);
+    float currentOutputGain = juce::Decibels::decibelsToGain(currentOutputGainDB);
 
     // Create a copy of the input buffer for input metering before any processing
     juce::AudioBuffer<float> inputBuffer;
@@ -119,8 +130,8 @@ void CBNJuceAudioProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce:
             maxLevel = std::max(maxLevel, std::abs(channelData[i]));
         }
 
-        // Smooth the level
-        float newLevel = maxLevel;
+        // Smooth the level and apply input gain for display
+        float newLevel = maxLevel * currentInputGain;
         inputLevelLeft = inputLevelLeft.load() * levelSmoothing + newLevel * (1.0f - levelSmoothing);
     }
 
@@ -134,8 +145,8 @@ void CBNJuceAudioProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce:
             maxLevel = std::max(maxLevel, std::abs(channelData[i]));
         }
 
-        // Smooth the level
-        float newLevel = maxLevel;
+        // Smooth the level and apply input gain for display
+        float newLevel = maxLevel * currentInputGain;
         inputLevelRight = inputLevelRight.load() * levelSmoothing + newLevel * (1.0f - levelSmoothing);
     }
 
@@ -161,6 +172,41 @@ void CBNJuceAudioProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce:
         }
     }
 
+    // Measure output levels after main gain but before output gain
+    // Create a copy of the current buffer for output metering
+    juce::AudioBuffer<float> outputBuffer;
+    outputBuffer.makeCopyOf(buffer);
+
+    if (totalNumOutputChannels >= 1)
+    {
+        auto *channelData = outputBuffer.getReadPointer(0);
+        float maxLevel = 0.0f;
+
+        for (int i = 0; i < outputBuffer.getNumSamples(); ++i)
+        {
+            maxLevel = std::max(maxLevel, std::abs(channelData[i]));
+        }
+
+        // Smooth the level and apply output gain for display purposes
+        float newLevel = maxLevel * currentOutputGain;
+        outputLevelLeft = outputLevelLeft.load() * levelSmoothing + newLevel * (1.0f - levelSmoothing);
+    }
+
+    if (totalNumOutputChannels >= 2)
+    {
+        auto *channelData = outputBuffer.getReadPointer(1);
+        float maxLevel = 0.0f;
+
+        for (int i = 0; i < outputBuffer.getNumSamples(); ++i)
+        {
+            maxLevel = std::max(maxLevel, std::abs(channelData[i]));
+        }
+
+        // Smooth the level and apply output gain for display purposes
+        float newLevel = maxLevel * currentOutputGain;
+        outputLevelRight = outputLevelRight.load() * levelSmoothing + newLevel * (1.0f - levelSmoothing);
+    }
+
     // Apply output gain to all channels
     for (int channel = 0; channel < totalNumInputChannels; ++channel)
     {
@@ -170,37 +216,6 @@ void CBNJuceAudioProcessor::processBlock(juce::AudioBuffer<float> &buffer, juce:
         {
             channelData[sample] *= currentOutputGain;
         }
-    }
-
-    // Measure output levels after all processing
-    if (totalNumOutputChannels >= 1)
-    {
-        auto *channelData = buffer.getReadPointer(0);
-        float maxLevel = 0.0f;
-
-        for (int i = 0; i < buffer.getNumSamples(); ++i)
-        {
-            maxLevel = std::max(maxLevel, std::abs(channelData[i]));
-        }
-
-        // Smooth the level
-        float newLevel = maxLevel;
-        outputLevelLeft = outputLevelLeft.load() * levelSmoothing + newLevel * (1.0f - levelSmoothing);
-    }
-
-    if (totalNumOutputChannels >= 2)
-    {
-        auto *channelData = buffer.getReadPointer(1);
-        float maxLevel = 0.0f;
-
-        for (int i = 0; i < buffer.getNumSamples(); ++i)
-        {
-            maxLevel = std::max(maxLevel, std::abs(channelData[i]));
-        }
-
-        // Smooth the level
-        float newLevel = maxLevel;
-        outputLevelRight = outputLevelRight.load() * levelSmoothing + newLevel * (1.0f - levelSmoothing);
     }
 }
 

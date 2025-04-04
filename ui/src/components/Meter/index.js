@@ -58,7 +58,13 @@ const Meter = ({
             hideLabel={true}
             size="small"
             useTooltip={true}
-            response="audio"
+            response="linear"
+            defaultValue={0.5}
+            sensitivity={0.8}
+            valueFormatter={(val) => {
+              const dB = Math.round(val * 48 - 24);
+              return dB > 0 ? `+${dB} dB` : `${dB} dB`;
+            }}
             onDragStart={onSliderDragStart}
             onDragEnd={onSliderDragEnd}
           />
